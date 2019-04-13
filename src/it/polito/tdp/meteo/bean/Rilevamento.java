@@ -38,7 +38,8 @@ public class Rilevamento {
 	public void setUmidita(int umidita) {
 		this.umidita = umidita;
 	}
-
+	
+	
 	// @Override
 	// public String toString() {
 	// return localita + " " + data + " " + umidita;

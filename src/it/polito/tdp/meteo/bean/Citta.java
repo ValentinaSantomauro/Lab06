@@ -1,5 +1,6 @@
 package it.polito.tdp.meteo.bean;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Citta {
@@ -75,4 +76,5 @@ public class Citta {
 		return nome;
 	}
 	
+
 }
