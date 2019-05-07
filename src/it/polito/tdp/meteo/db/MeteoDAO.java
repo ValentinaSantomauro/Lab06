@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,7 +21,7 @@ public class MeteoDAO {
 		List<Rilevamento> rilevamenti = new ArrayList<Rilevamento>();
 
 		try {
-			Connection conn = DBConnect.getInstance().getConnection();
+			Connection conn = DBConnect.getConnection();
 			PreparedStatement st = conn.prepareStatement(sql);
 
 			ResultSet rs = st.executeQuery();
@@ -43,25 +44,22 @@ public class MeteoDAO {
 	
 	
 
-	public List<Rilevamento> getAllRilevamentiLocalitaMese(int mese, String localita) {
+	public List<Rilevamento> getRilevamentiLocalitaMese(Month mese, Citta citta) {
 		
 		/*seleziona l'umidità in base al mese e alla città */
 		
-		final String sql= "SELECT * "+
-				"FROM situazione "+
-				"WHERE Localita= ? AND MONTH (Data) =? "
-				+ " ORDER BY data ASC" ;
+		 String sql= "SELECT Localita,Data,Umidita FROM situazione WHERE MONTH(Data)=? AND Localita=? ";
 		
 		List<Rilevamento> rilevamenti = new ArrayList<Rilevamento>();
 		try {
-			Connection conn = DBConnect.getInstance().getConnection();
+			Connection conn = DBConnect.getConnection();
 			PreparedStatement st = conn.prepareStatement(sql);
 
-			ResultSet rs = st.executeQuery();
 			
-			st.setString(1, localita);
-			st.setInt(2, mese);
-			ResultSet res = st.executeQuery() ;
+			
+			st.setString(2, citta.getNome());
+			st.setInt(1, mese.getValue());
+			ResultSet rs= st.executeQuery();
 		
 			while (rs.next()) {
 
@@ -70,30 +68,59 @@ public class MeteoDAO {
 			}
 
 			conn.close();
-			return rilevamenti;
+			
 
 		} catch (SQLException e) {
 
 			e.printStackTrace();
 			throw new RuntimeException(e);
 		}
+		return rilevamenti;
 		
 	}
 
-	public Double getAvgRilevamentiLocalitaMese(int mese, String localita) {
-		/*calcola la media delle umidità in base alla selezione di città e mese*/
+	 
+	public List<Citta> getAllCitta() {
+		String sql = "SELECT DISTINCT Localita FROM situazione ORDER BY Localita";
+		
+		List<Citta> result = new ArrayList<Citta>();
+
+		try {
+			Connection conn = DBConnect.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);
+			ResultSet res = st.executeQuery();
+
+			while (res.next()) {
+				result.add(new Citta(res.getString("Localita")));
+			}
+
+			conn.close();
+		} catch (SQLException e) {
+			
+			e.printStackTrace();
+		}
+
+		return result;
+		
+	}
+
+
+
+	public Double getUmiditaMedia(Month m, Citta c) {
+/*calcola la media delle umidità in base alla selezione di città e mese*/
 		
 		final String sql= "SELECT AVG(Umidita) AS U "+
 				"FROM situazione "+
-				"WHERE Localita= ? AND MONTH (Data) =? " ;
+				"WHERE Localita= ? "+
+				"AND MONTH (Data) =? " ;
 		
-		Double umidita = 0.0;
+		
 		try {
-			Connection conn = DBConnect.getInstance().getConnection();
+			Connection conn = DBConnect.getConnection();
 			PreparedStatement st = conn.prepareStatement(sql);
 
-			st.setString(1, localita);
-			st.setInt(2, mese);
+			st.setString(1, c.getNome());
+			st.setInt(2, m.getValue());
 			ResultSet rs = st.executeQuery();
 		
 			rs.next(); // posiziona sulla prima (ed unica) riga
@@ -111,32 +138,6 @@ public class MeteoDAO {
 			throw new RuntimeException(e);
 		}
 		
-		
-	}
-
-
-
-	public List<Citta> getAllCitta() {
-		String sql = "SELECT DISTINCT localita FROM situazione ORDER BY localita";
-		
-		List<Citta> result = new ArrayList<>();
-
-		try {
-			Connection conn = DBConnect.getInstance().getConnection();
-			PreparedStatement st = conn.prepareStatement(sql);
-			ResultSet res = st.executeQuery();
-
-			while (res.next()) {
-				result.add(new Citta(res.getString("localita")));
-			}
-
-			conn.close();
-		} catch (SQLException e) {
-			
-			e.printStackTrace();
-		}
-
-		return result;
 		
 	}
 

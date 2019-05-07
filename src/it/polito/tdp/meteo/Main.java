@@ -13,7 +13,7 @@ public class Main extends Application {
 			FXMLLoader loader = new FXMLLoader(getClass().getResource("Meteo.fxml"));
 			BorderPane root = (BorderPane) loader.load();
 
-			Scene scene = new Scene(root);
+			Scene scene = new Scene(root,400,400);
 			scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
 
 			MeteoController controller = loader.getController();

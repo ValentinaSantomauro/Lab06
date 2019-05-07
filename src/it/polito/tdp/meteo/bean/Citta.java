@@ -13,10 +13,10 @@ public class Citta {
 		this.nome = nome;
 	}
 	
-	public Citta(String nome, List<Rilevamento> rilevamenti) {
+	/*public Citta(String nome, List<Rilevamento> rilevamenti) {
 		this.nome = nome;
 		this.rilevamenti = rilevamenti;
-	}
+	}*/
 
 	public String getNome() {
 		return nome;

@@ -1,5 +1,6 @@
 package it.polito.tdp.meteo;
 
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -29,65 +30,33 @@ public class Model {
 	}
 
 	
-	public String getUmiditaMedia(int mese) {
-		
-		/*
-		 * 
-		Citta milano = new Citta("Milano");
-		Citta torino = new Citta("Torino");
-		Citta genova = new Citta("Genova");
-
-		//Questo metodo mi ritorna una lista di rilevamenti contenenti tutti i rilevamenti in un certo mese per una certa città 
-		milano.setRilevamenti(meteoDao.getAllRilevamentiLocalitaMese(mese, "Milano"));
-		torino.setRilevamenti(meteoDao.getAllRilevamentiLocalitaMese(mese, "Torino"));
-		genova.setRilevamenti(meteoDao.getAllRilevamentiLocalitaMese(mese, "Genova"));
+	public Double getUmiditaMedia(Month m, Citta c) {
 		
 		
-		String mediaTo = Double.toString(this.calcolaUmiditaMedia(rilTo));
-		String mediaMi = Double.toString(this.calcolaUmiditaMedia(rilMi));
-		String mediaGen = Double.toString(this.calcolaUmiditaMedia(rilGen));
-		 * 
-		 */
-		
-		String result="";
-		for(Citta c: citta) {
-			result += ( c.getNome() + " "+ dao.getAvgRilevamentiLocalitaMese(mese, c.getNome())+ "\n") ; 
-		}
-		
-		return result; 
+		return dao.getUmiditaMedia(m,c); 
 	}
 
-	/*public double calcolaUmiditaMedia(List <Rilevamento> ril) {
-		int somma = 0;
-
-		for(Rilevamento r : ril) {
-			somma += r.getUmidita();
-		}
-		
-		return somma/ril.size();
-	}*/
 	
 	
+	List <Citta> best; //in cui ogni volta salvo la migliore
 	
-	List <Citta> best;
-	double costo_best; 
 	
-	public String trovaSequenza(int mese) {
+	public List <Citta> trovaSequenza(Month mese) {
 		//avvio della ricorsione
-		
-		best = null;
-		costo_best=0.0;
-		
 		List <Citta> parziale= new ArrayList<Citta>();
-		
+		this.best = null;
+		MeteoDAO dao2 = new MeteoDAO();
+		// carica dentro ciascuna delle leCitta la lista dei rilevamenti nel mese
+				// considerato (e solo quello)
+				
+				for (Citta c :citta) {
+					c.setRilevamenti(dao2.getRilevamentiLocalitaMese(mese, c));
+				}
+		//--- costo---
+				
 		cerca(parziale, 0);
 		
-		String nomiCitta ="";
-		
-		for(Citta c: best) {
-			nomiCitta+= c.getNome()+"\n";
-		}
-		return nomiCitta;
+		return best;
 		
 	}
 	
@@ -105,9 +74,8 @@ public class Model {
 			 * il costo della soluzione parziale trovata è minore del costo migliore
 			 * 
 			 */
-			if(best == null || costo > punteggioSoluzione(best))
-		//???
-				best = new ArrayList<>(parziale);
+			if(best == null || costo < punteggioSoluzione(best))
+				best = new ArrayList<Citta>(parziale);
 			
 		}
 		
@@ -115,10 +83,9 @@ public class Model {
 		else {
 			
 			for(Citta c : citta) {
-			if(!this.controllaParziale(parziale))
-				return;
+			if(this.controllaParziale(c,parziale))
+			{
 			//altrimenti ha passato i controlli dei giorni precedenti
-			else {
 				parziale.add(c);
 				cerca(parziale, L+1);
 				parziale.remove(parziale.size()-1);
@@ -143,39 +110,44 @@ public class Model {
 			}
 		}
 		
-		
-		
 		return score;
 	}
 
-	private boolean controllaParziale(List<Citta> parziale) {
+	private boolean controllaParziale(Citta prova, List<Citta> parziale) {
 		//tutte le citta almeno una volta in 15 gg
+		int conta=0;
+		for(Citta precedente : parziale) {
+			//chiediamo se la citta precedente è la stessa citta che sto inserendo, incremento il conteggio
+			if(precedente.equals(prova))
+				conta++;
+		}
+		if(conta>= NUMERO_GIORNI_CITTA_MAX)
+			return false;
+		//verifico i gg minimi
+		//il primo gg della sequenza posso mettere quello che voglio
+		if(parziale.size()==0)
+		return true;
 		
-		if(parziale.size() == NUMERO_GIORNI_TOTALI) {
-			for ( Citta sc1 : parziale) {
-				for(Citta sc2 : citta) {
-					//se il nome della citta compare in parziale incremento il suo contatore
-					if(sc2.getNome().equals(sc1.getNome())) {
-						sc2.increaseCounter();	
-					}	
-				}	
-			}
-			//verifico che per tutte le città il contatore sia maggiore o uguale a 3 e minore di 6
-			for(int i=0 ; i< parziale.size(); i++) {
-				if((parziale.get(i).getNome()).equals((parziale.get(i+1).getNome()).equals(parziale.get(i+2).getNome())))
-				{//ci sono tre giorni consecutivi 
-					return true;
-					}
-				}
-			
-			for(Citta c : citta) {
-				//NON BASTA mettere >=3 : devono essere tre giorni consecutivi! 
-				if(c.getCounter()>=3 || c.getCounter()<=6)
-					return true; 
-			}
+		if(parziale.size()==1 || parziale.size()==2) {
+			//siamo nel secondo o terzo gg, non posso cambiare: devo rimanere almeno tre gg
+			return parziale.get(parziale.size()-1).equals(prova);
+			//se quello che cè in posizione -1 è uguale ritorna true e l'aggiunta è valida
+			//verifica che in equals il controllo sia fatto sul nome
 		}
 		
+		if(parziale.get(parziale.size()-1).equals(prova))
+			return true; //posso sempre rimanere dopo 3 gg
+		//se cambio citt: lo posso fare? verifico la citta precedente nella lista e quella due volte precedente
+		if(parziale.get(parziale.size()-1).equals(parziale.get(parziale.size()-2)) && parziale.get(parziale.size()-2).equals(parziale.get(parziale.size() -3)) ) {
+			return true;
+		}
 		return false;
+	}
+
+
+	public List<Citta> getLeCitta() {
+		
+		return citta;
 	}
 	
 }

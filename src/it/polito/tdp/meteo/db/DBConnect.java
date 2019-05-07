@@ -7,31 +7,26 @@ import java.sql.SQLException;
 
 public class DBConnect {
 
-	static private final String jdbcUrl = "jdbc:mysql://localhost/meteo?user=root&password=Admaiorasemper8";
-	static private DBConnect instance = null;
+	static private final String jdbcUrl = "jdbc:mysql://localhost/meteo?useTimeZone=true&serverTimeZone=UTC&user=root&password=Admaiorasemper8";
+	
 
-	private DBConnect() {
-		instance = this;
-	}
+	static private Connection connection = null;
 
-	public static DBConnect getInstance() {
-		if (instance == null)
-			return new DBConnect();
-		else {
-			return instance;
-		}
-	}
+	public static Connection getConnection() {
 
-	public Connection getConnection() {
 		try {
-
-			Connection conn = DriverManager.getConnection(jdbcUrl);
-			return conn;
+			if (connection == null || connection.isClosed()) {
+				connection = DriverManager.getConnection(jdbcUrl);
+			}
+			return connection;
 
 		} catch (SQLException e) {
+
 			e.printStackTrace();
-			throw new RuntimeException("Cannot get connection " + jdbcUrl, e);
+			throw new RuntimeException("Cannot get a connection " + jdbcUrl, e);
 		}
 	}
+ 
+	
 
 }
